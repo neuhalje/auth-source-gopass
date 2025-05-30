@@ -106,8 +106,24 @@ The value for user will be parsed from the SECRET, if possible. Fallback is USER
         `(:user ,(or username user)
           :secret ,password)))))
 
+(defun auth-source-gopass--get-user-from-path (path)
+  "Get the user from PATH.
+ a/b/c -> c and a/b/ -> nil.-"
+  (let ((match (string-match (rx "/"
+                                 (group (one-or-more (not "/")))
+                                 eol)
+                             path)))
+    (if match
+        (substring path (+ 1 match))
+      nil)))
+
 (defun auth-source-gopass--get-secret (path user)
-  "Read the secret from PATH and construct the plist. Use USER if no user is found in the secret."
+  "Read the secret from PATH and construct the plist.
+The user is in that precedence
+- taken from the secret  (username: ...)
+- taken from the path (bla/bla/username)
+- taken from the USER parameter"
+
   (if (executable-find auth-source-gopass-executable)
       (let ((buf (get-buffer-create "*gopass*" t)))
         (with-current-buffer buf
@@ -122,12 +138,15 @@ The value for user will be parsed from the SECRET, if possible. Fallback is USER
 
             (if  (not (= 0 gopass-exit-status))
                 nil ;; keep the buffer content for diagnosis
-              (let ((secret (auth-source-gopass--parse-gopass-secret buf user)))
+              (let* ((user (or  (auth-source-gopass--get-user-from-path path)
+                                user))
+                     (secret (auth-source-gopass--parse-gopass-secret buf user)))
                 (erase-buffer)
                 secret)))))
     ;; If not executable was found, return nil and show a warning
     (warn "`auth-source-gopass': Could not find executable '%s' to query gopass" auth-source-gopass-executable)
     nil))
+
 
 (cl-defun auth-source-gopass-search (&rest spec
                                            &key backend type host user port
