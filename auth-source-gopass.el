@@ -60,18 +60,23 @@ and user, separated by the `auth-source-gopass-path-separator'."
   "Searche gopass for the specified user and host.
 SPEC, BACKEND, TYPE, HOST, USER and PORT are required by auth-source."
   (if (executable-find auth-source-gopass-executable)
-      (with-temp-buffer
-        (let* ((path (funcall auth-source-gopass-construct-query-path backend type host user port))
-               (gopass-exit-status (call-process auth-source-gopass-executable
-                                                 nil
-                                                 (current-buffer)
-                                                 nil
-                                                 "show" "--nosync" "--password" path)))
+      (let ((buf (get-buffer-create "*gopass*" t)))
+        (with-current-buffer buf
+          (erase-buffer)
+          (let* ((path (funcall auth-source-gopass-construct-query-path backend type host user port))
+                 (gopass-exit-status (call-process auth-source-gopass-executable
+                                                   nil
+                                                   (current-buffer)
+                                                   nil
+                                                   "show" "--nosync" "--password" path)))
+            (auth-source-do-trivia "auth-source-gopass: %s exit status: for query '%s': %d"
+                                   auth-source-gopass-executable path gopass-exit-status)
 
-          (if  (= 0 gopass-exit-status)
-              nil
-            (list (list :user user
-                        :secret (buffer-string))))))
+            (if  (not (= 0 gopass-exit-status))
+                nil ;; keep the buffer content for diagnosis
+              (list (list :user user
+                          :secret (buffer-string)))
+              (erase-buffer)))))
     ;; If not executable was found, return nil and show a warning
     (warn "`auth-source-gopass': Could not find executable '%s' to query gopass" auth-source-gopass-executable)))
 
