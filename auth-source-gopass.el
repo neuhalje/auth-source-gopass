@@ -7,7 +7,7 @@
 ;; Created: 31 December 2022
 ;; URL: https://github.com/
 
-;; Package-Requires: ((emacs "24.4"))
+;; Package-Requires: ((emacs "29.1"))
 
 ;; Version: 0.0.3
 
@@ -53,6 +53,35 @@ and user, separated by the `auth-source-gopass-path-separator'."
   (mapconcat #'identity (list auth-source-gopass-path-prefix
                               host
                               user) auth-source-gopass-path-separator))
+
+(defun  auth-source-gopass--find-candidates  (host user)
+  "Run `gopass find' to find a list of candidate paths for the query HOST USER."
+  (if (executable-find auth-source-gopass-executable)
+      (let ((buf (get-buffer-create "*gopass*" t)))
+        (with-current-buffer buf
+          (erase-buffer)
+          (let* ((regex (format "%s.*%s.*%s" (or auth-source-gopass-path-prefix "") (or host "") (or user "")))
+                 (gopass-exit-status (call-process auth-source-gopass-executable
+                                                   nil
+                                                   (current-buffer)
+                                                   nil
+                                                   "find" "--regex" regex)))
+            (auth-source-do-trivia "auth-source-gopass: %s exit status: for finding host '%s' and user '%s' [rx: %s]: %d"
+                                   auth-source-gopass-executable host user regex gopass-exit-status)
+
+            (if  (not (= 0 gopass-exit-status))
+                nil ;; keep the buffer content for diagnosis
+              (let ((paths '()))
+                (goto-char (point-min))
+                (while (not (eobp))
+                  (push (buffer-substring-no-properties (pos-bol) (pos-eol)) paths)
+                  (line-move-1 1 t))
+
+                (erase-buffer)
+                (reverse paths))))))
+    ;; If not executable was found, return nil and show a warning
+    (warn "`auth-source-gopass': Could not find executable '%s' to query gopass" auth-source-gopass-executable)
+    nil))
 
 (cl-defun auth-source-gopass-search (&rest spec
                                            &key backend type host user port
