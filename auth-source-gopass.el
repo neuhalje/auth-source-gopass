@@ -151,30 +151,13 @@ The user is in that precedence
 (cl-defun auth-source-gopass-search (&rest spec
                                            &key backend type host user port
                                            &allow-other-keys)
-  "Searche gopass for the specified user and host.
+  "Search gopass for the specified user and host.
 SPEC, BACKEND, TYPE, HOST, USER and PORT are required by auth-source."
-  (if (executable-find auth-source-gopass-executable)
-      (let ((buf (get-buffer-create "*gopass*" t)))
-        (with-current-buffer buf
-          (erase-buffer)
-          (let* ((path (funcall auth-source-gopass-construct-query-path backend type host user port))
-                 (gopass-exit-status (call-process auth-source-gopass-executable
-                                                   nil
-                                                   (current-buffer)
-                                                   nil
-                                                   "show" "--nosync" "--password" path)))
-            (auth-source-do-trivia "auth-source-gopass: %s exit status: for query '%s': %d"
-                                   auth-source-gopass-executable path gopass-exit-status)
-
-            (if  (not (= 0 gopass-exit-status))
-                nil ;; keep the buffer content for diagnosis
-              (let ((secret (buffer-string)))
-                (erase-buffer)
-                (list (list :user user
-                            :secret secret)))))))
-    ;; If not executable was found, return nil and show a warning
-    (warn "`auth-source-gopass': Could not find executable '%s' to query gopass" auth-source-gopass-executable)
-    nil))
+  (let* ((paths  (auth-source-gopass--find-candidates host user))
+         (secrets (mapcar (lambda (path)
+                            (auth-source-gopass--get-secret path user))
+                          paths)))
+    secrets))
 
 ;;;###autoload
 (defun auth-source-gopass-enable ()
