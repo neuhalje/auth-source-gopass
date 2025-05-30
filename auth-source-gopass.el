@@ -83,6 +83,52 @@ and user, separated by the `auth-source-gopass-path-separator'."
     (warn "`auth-source-gopass': Could not find executable '%s' to query gopass" auth-source-gopass-executable)
     nil))
 
+(defun auth-source-gopass--parse-gopass-secret (secret user)
+  "Parse the gopass SECRET and return
+- nil in case of error
+- plist with :user and :secret
+
+SECRET is a buffer.
+The value for user will be parsed from the SECRET, if possible. Fallback is USER."
+  (with-current-buffer secret
+    (goto-char (point-min))
+    (let (password
+          username)
+      (setq password (buffer-substring-no-properties (pos-bol) (pos-eol)))
+      (line-move-1 1 t)
+      (if (re-search-forward (rx line-start
+                                 "username:" (one-or-more blank)
+                                 (group (one-or-more not-newline)))
+                             nil t)
+          (setq username (match-string 1)))
+      (if  (or (null password) (string= "" password))
+          nil
+        `(:user ,(or username user)
+          :secret ,password)))))
+
+(defun auth-source-gopass--get-secret (path user)
+  "Read the secret from PATH and construct the plist. Use USER if no user is found in the secret."
+  (if (executable-find auth-source-gopass-executable)
+      (let ((buf (get-buffer-create "*gopass*" t)))
+        (with-current-buffer buf
+          (erase-buffer)
+          (let* ((gopass-exit-status (call-process auth-source-gopass-executable
+                                                   nil
+                                                   (current-buffer)
+                                                   nil
+                                                   "show" "--nosync" path)))
+            (auth-source-do-trivia "auth-source-gopass: %s exit status: for query '%s': %d"
+                                   auth-source-gopass-executable path gopass-exit-status)
+
+            (if  (not (= 0 gopass-exit-status))
+                nil ;; keep the buffer content for diagnosis
+              (let ((secret (auth-source-gopass--parse-gopass-secret buf user)))
+                (erase-buffer)
+                secret)))))
+    ;; If not executable was found, return nil and show a warning
+    (warn "`auth-source-gopass': Could not find executable '%s' to query gopass" auth-source-gopass-executable)
+    nil))
+
 (cl-defun auth-source-gopass-search (&rest spec
                                            &key backend type host user port
                                            &allow-other-keys)
