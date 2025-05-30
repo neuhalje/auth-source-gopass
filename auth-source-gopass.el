@@ -51,8 +51,8 @@
 Usually starting with the `auth-source-gopass-path-prefix', followed by host
 and user, separated by the `auth-source-gopass-path-separator'."
   (mapconcat #'identity (list auth-source-gopass-path-prefix
-                             host
-                             user) auth-source-gopass-path-separator))
+                              host
+                              user) auth-source-gopass-path-separator))
 
 (cl-defun auth-source-gopass-search (&rest spec
                                            &key backend type host user port
@@ -60,13 +60,18 @@ and user, separated by the `auth-source-gopass-path-separator'."
   "Searche gopass for the specified user and host.
 SPEC, BACKEND, TYPE, HOST, USER and PORT are required by auth-source."
   (if (executable-find auth-source-gopass-executable)
-      (let ((got-secret (string-trim
-                         (shell-command-to-string
-                          (format "%s show -o %s"
-                                  auth-source-gopass-executable
-                                  (shell-quote-argument (funcall auth-source-gopass-construct-query-path backend type host user port)))))))
-        (list (list :user user
-                    :secret got-secret)))
+      (with-temp-buffer
+        (let* ((path (funcall auth-source-gopass-construct-query-path backend type host user port))
+               (gopass-exit-status (call-process auth-source-gopass-executable
+                                                 nil
+                                                 (current-buffer)
+                                                 nil
+                                                 "show" "--nosync" "--password" path)))
+
+          (if  (= 0 gopass-exit-status)
+              nil
+            (list (list :user user
+                        :secret (buffer-string))))))
     ;; If not executable was found, return nil and show a warning
     (warn "`auth-source-gopass': Could not find executable '%s' to query gopass" auth-source-gopass-executable)))
 
