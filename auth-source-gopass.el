@@ -74,9 +74,10 @@ SPEC, BACKEND, TYPE, HOST, USER and PORT are required by auth-source."
 
             (if  (not (= 0 gopass-exit-status))
                 nil ;; keep the buffer content for diagnosis
-              (list (list :user user
-                          :secret (buffer-string)))
-              (erase-buffer)))))
+              (let ((secret (buffer-string)))
+                (erase-buffer)
+                (list (list :user user
+                            :secret secret)))))))
     ;; If not executable was found, return nil and show a warning
     (warn "`auth-source-gopass': Could not find executable '%s' to query gopass" auth-source-gopass-executable)
     nil))
