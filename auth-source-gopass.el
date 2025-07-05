@@ -48,7 +48,11 @@
       (let ((buf (get-buffer-create "*gopass*" t)))
         (with-current-buffer buf
           (erase-buffer)
-          (let* ((regex (format "%s.*%s.*%s" (or auth-source-gopass-path-prefix "") (or host "") (or user "")))
+          (let* ((regex (format "%s.*%s.*%s.*%s"
+                                (or auth-source-gopass-path-prefix "")
+                                (or host "")
+                                auth-source-gopass-path-separator
+                                (or user "")))
                  (gopass-exit-status (call-process auth-source-gopass-executable
                                                    nil
                                                    (current-buffer)
@@ -97,9 +101,9 @@ The value for user will be parsed from the SECRET, if possible. Fallback is USER
 (defun auth-source-gopass--get-user-from-path (path)
   "Get the user from PATH.
  a/b/c -> c and a/b/ -> nil.-"
-  (let ((match (string-match (rx "/"
-                                 (group (one-or-more (not "/")))
-                                 eol)
+  (let ((match (string-match (rx-to-string `(: ,auth-source-gopass-path-separator
+                                             (group (one-or-more (not ,auth-source-gopass-path-separator)))
+                                             eol))
                              path)))
     (if match
         (substring path (+ 1 match))
