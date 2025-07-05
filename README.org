@@ -28,18 +28,3 @@ This package provides some parameters as well as a function, which can be custom
 
 - -auth-source-gopass-executable- :: Default value "gopass"
   Executable used for gopass.
-
-- -auth-source-gopass-construct-query-path- :: Default value 'auth-source-gopass--gopass-construct-entry-path
-  Function to construct the query path in the gopass store.
-
-  #+BEGIN_SRC elisp
-  (defun auth-source-gopass--gopass-construct-entry-path (_backend _type host user _port)
-  "Construct the full entry-path for the gopass entry grom HOST and USER.
-   Usually starting with the auth-source-gopass-path-prefix, followed by host
-   and user, separated by the auth-source-gopass-path-separator."
-  (mapconcat 'identity (list auth-source-gopass-path-prefix
-                             host
-                             user) auth-source-gopass-path-separator))
-  #+END_SRC
-
-  This function could be overwritten to construct the query path to your personal structure.

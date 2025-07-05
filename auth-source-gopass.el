@@ -41,18 +41,6 @@
   :type 'string
   :group 'auth-source-gopass)
 
-(defcustom auth-source-gopass-construct-query-path 'auth-source-gopass--gopass-construct-query-path
-  "Function to construct the query path in the gopass store."
-  :type 'function
-  :group 'auth-source-gopass)
-
-(defun auth-source-gopass--gopass-construct-query-path (_backend _type host user _port)
-  "Construct the full entry-path for the gopass entry grom HOST and USER.
-Usually starting with the `auth-source-gopass-path-prefix', followed by host
-and user, separated by the `auth-source-gopass-path-separator'."
-  (mapconcat #'identity (list auth-source-gopass-path-prefix
-                              host
-                              user) auth-source-gopass-path-separator))
 
 (defun  auth-source-gopass--find-candidates  (host user)
   "Run `gopass find' to find a list of candidate paths for the query HOST USER."
