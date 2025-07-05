@@ -1,15 +1,16 @@
 ;;; auth-source-gopass.el --- Gopass integration for auth-source -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2022 Markus M. May
+;; Copyright (C) 2022 Markus M. May; 2025 Jens Neuhalfen
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; Author: Markus M. May <mmay@javafreedom.org>
+;; Author: Jens Neuhalfen <jens@neuhalfen.name> [0.0.4]
+;;         Markus M. May <mmay@javafreedom.org> [till 0.0.3]
 ;; Created: 31 December 2022
 ;; URL: https://github.com/
 
 ;; Package-Requires: ((emacs "29.1"))
 
-;; Version: 0.0.3
+;; Version: 0.0.4
 
 ;;; Commentary:
 ;; This package adds gopass support to auth-source by calling
